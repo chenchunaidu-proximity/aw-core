@@ -99,3 +99,18 @@ class AbstractStorage(metaclass=ABCMeta):
     @abstractmethod
     def replace_last(self, bucket_id: str, event: Event) -> None:
         raise NotImplementedError
+
+    @abstractmethod
+    def store_token(self, token: str) -> None:
+        """Store authentication token"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_token(self) -> Optional[str]:
+        """Get stored authentication token"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def delete_token(self) -> None:
+        """Delete stored authentication token"""
+        raise NotImplementedError

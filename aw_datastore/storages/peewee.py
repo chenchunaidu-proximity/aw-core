@@ -131,6 +131,21 @@ class EventModel(BaseModel):
         }
 
 
+class TokenModel(BaseModel):
+    id = AutoField()
+    token = CharField(unique=True)
+    created = DateTimeField(default=datetime.now)
+    updated = DateTimeField(default=datetime.now)
+
+    def json(self):
+        return {
+            "id": self.id,
+            "token": self.token,
+            "created": self.created,
+            "updated": self.updated,
+        }
+
+
 class PeeweeStorage(AbstractStorage):
     sid = "peewee"
 
@@ -153,6 +168,7 @@ class PeeweeStorage(AbstractStorage):
         self.bucket_keys: Dict[str, int] = {}
         BucketModel.create_table(safe=True)
         EventModel.create_table(safe=True)
+        TokenModel.create_table(safe=True)
 
         # Migrate database if needed, requires closing the connection first
         self.db.close()
@@ -413,3 +429,33 @@ class PeeweeStorage(AbstractStorage):
             q = q.where(EventModel.timestamp <= endtime)
 
         return q
+
+    def store_token(self, token: str) -> None:
+        """Store authentication token"""
+        try:
+            # Delete existing token if any
+            TokenModel.delete().execute()
+            # Insert new token
+            TokenModel.create(token=token, updated=datetime.now())
+            logger.info("Authentication token stored successfully")
+        except Exception as e:
+            logger.error(f"Failed to store token: {e}")
+            raise
+
+    def get_token(self) -> Optional[str]:
+        """Get stored authentication token"""
+        try:
+            token_record = TokenModel.select().first()
+            return token_record.token if token_record else None
+        except Exception as e:
+            logger.error(f"Failed to get token: {e}")
+            return None
+
+    def delete_token(self) -> None:
+        """Delete stored authentication token"""
+        try:
+            TokenModel.delete().execute()
+            logger.info("Authentication token deleted successfully")
+        except Exception as e:
+            logger.error(f"Failed to delete token: {e}")
+            raise

@@ -19,6 +19,7 @@ class MemoryStorage(AbstractStorage):
         # self.logger.warning("Using in-memory storage, any events stored will not be persistent and will be lost when server is shut down. Use the --storage parameter to set a different storage method.")
         self.db: Dict[str, List[Event]] = {}
         self._metadata: Dict[str, dict] = dict()
+        self._token: Optional[str] = None
 
     def create_bucket(
         self,
@@ -185,3 +186,17 @@ class MemoryStorage(AbstractStorage):
         # NOTE: This does not actually get the most recent event, only the last inserted
         last = sorted(self.db[bucket_id], key=lambda e: e.timestamp)[-1]
         self.replace(bucket_id, last.id, event)
+
+    def store_token(self, token: str) -> None:
+        """Store authentication token"""
+        self._token = token
+        self.logger.info("Authentication token stored successfully")
+
+    def get_token(self) -> Optional[str]:
+        """Get stored authentication token"""
+        return self._token
+
+    def delete_token(self) -> None:
+        """Delete stored authentication token"""
+        self._token = None
+        self.logger.info("Authentication token deleted successfully")
