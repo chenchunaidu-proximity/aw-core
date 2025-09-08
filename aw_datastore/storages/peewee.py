@@ -57,6 +57,19 @@ def auto_migrate(path: str) -> None:
         with db.atomic():
             migrate(migrator.add_column("bucketmodel", "datastr", datastr_field))
 
+    # check if tokenmodel has url field
+    try:
+        info = db.execute_sql("PRAGMA table_info(tokenmodel)")
+        has_url = any(row[1] == "url" for row in info)
+        
+        if not has_url:
+            url_field = CharField(default="")
+            with db.atomic():
+                migrate(migrator.add_column("tokenmodel", "url", url_field))
+    except Exception:
+        # tokenmodel table might not exist yet, that's ok
+        pass
+
     db.close()
 
 
