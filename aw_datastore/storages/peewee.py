@@ -57,18 +57,6 @@ def auto_migrate(path: str) -> None:
         with db.atomic():
             migrate(migrator.add_column("bucketmodel", "datastr", datastr_field))
 
-    # check if tokenmodel has url field
-    try:
-        info = db.execute_sql("PRAGMA table_info(tokenmodel)")
-        has_url = any(row[1] == "url" for row in info)
-        
-        if not has_url:
-            url_field = CharField(default="")
-            with db.atomic():
-                migrate(migrator.add_column("tokenmodel", "url", url_field))
-    except Exception:
-        # tokenmodel table might not exist yet, that's ok
-        pass
 
     db.close()
 
@@ -144,21 +132,6 @@ class EventModel(BaseModel):
         }
 
 
-class TokenModel(BaseModel):
-    id = AutoField()
-    token = CharField(unique=True)
-    url = CharField()
-    created = DateTimeField(default=datetime.now)
-    updated = DateTimeField(default=datetime.now)
-
-    def json(self):
-        return {
-            "id": self.id,
-            "token": self.token,
-            "url": self.url,
-            "created": self.created,
-            "updated": self.updated,
-        }
 
 
 class PeeweeStorage(AbstractStorage):
@@ -183,7 +156,6 @@ class PeeweeStorage(AbstractStorage):
         self.bucket_keys: Dict[str, int] = {}
         BucketModel.create_table(safe=True)
         EventModel.create_table(safe=True)
-        TokenModel.create_table(safe=True)
 
         # Migrate database if needed, requires closing the connection first
         self.db.close()
@@ -445,34 +417,3 @@ class PeeweeStorage(AbstractStorage):
 
         return q
 
-    def store_token_data(self, token: str, url: str) -> None:
-        """Store authentication token and API URL"""
-        try:
-            # Delete existing token if any
-            TokenModel.delete().execute()
-            # Insert new token
-            TokenModel.create(token=token, url=url, updated=datetime.now())
-            logger.info("Authentication token and URL stored successfully")
-        except Exception as e:
-            logger.error(f"Failed to store token data: {e}")
-            raise
-
-    def get_token_data(self) -> Optional[tuple[str, str]]:
-        """Get stored authentication token and API URL as (token, url)"""
-        try:
-            token_record = TokenModel.select().first()
-            if token_record:
-                return token_record.token, token_record.url
-            return None
-        except Exception as e:
-            logger.error(f"Failed to get token data: {e}")
-            return None
-
-    def delete_token_data(self) -> None:
-        """Delete stored authentication token and API URL"""
-        try:
-            TokenModel.delete().execute()
-            logger.info("Authentication token and URL deleted successfully")
-        except Exception as e:
-            logger.error(f"Failed to delete token data: {e}")
-            raise
