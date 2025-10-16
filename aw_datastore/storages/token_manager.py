@@ -101,8 +101,8 @@ class TokenManager:
             # Atomic move (rename) to final location
             os.replace(temp_path, self.storage_path)
             
-            logger.info("✅ Authentication token and URL stored successfully")
-            logger.debug(f"Storage path: {self.storage_path}")
+            logger.info("===>> Authentication token and URL stored successfully")
+            logger.debug(f"===>> Storage path: {self.storage_path}")
             return True
             
         except Exception as e:
@@ -125,7 +125,7 @@ class TokenManager:
         """
         try:
             if not os.path.exists(self.storage_path):
-                logger.debug("No token storage file found")
+                logger.info("===>> No token storage file found")
                 return None
             
             with open(self.storage_path, 'r', encoding='utf-8') as f:
@@ -133,17 +133,17 @@ class TokenManager:
             
             # Validate data structure
             if not isinstance(auth_data, dict):
-                logger.error("Invalid token data format")
+                logger.error("===>> Invalid token data format")
                 return None
             
             token = auth_data.get('token')
             url = auth_data.get('url')
             
             if not token or not url:
-                logger.error("Token or URL missing from storage")
+                logger.error("===>> Token or URL missing from storage")
                 return None
             
-            logger.debug("✅ Authentication token and URL retrieved successfully")
+            logger.info(f"===>> Authentication token and URL retrieved successfully (URL: {url})")
             return token, url
             
         except FileNotFoundError:
@@ -169,7 +169,7 @@ class TokenManager:
                 return True
             
             os.remove(self.storage_path)
-            logger.info("✅ Authentication token and URL deleted successfully")
+            logger.info("===>> Authentication token and URL deleted successfully")
             return True
             
         except FileNotFoundError:
