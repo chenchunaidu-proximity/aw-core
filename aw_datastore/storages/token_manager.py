@@ -117,8 +117,6 @@ class TokenManager:
             # Atomic move (rename) to final location
             os.replace(temp_path, self.storage_path)
             
-            logger.info("===>> Authentication token and URL stored successfully")
-            logger.debug(f"===>> Storage path: {self.storage_path}")
             return True
             
         except Exception as e:
@@ -170,9 +168,7 @@ class TokenManager:
                     return None
                 else:
                     expires_at = datetime.fromtimestamp(exp_timestamp)
-                    logger.debug(f"===>> Token valid until {expires_at.strftime('%Y-%m-%d %H:%M:%S')}")
             
-            logger.info(f"===>> Authentication token and URL retrieved successfully (URL: {url})")
             return token, url
             
         except FileNotFoundError:
@@ -198,7 +194,6 @@ class TokenManager:
                 return True
             
             os.remove(self.storage_path)
-            logger.info("===>> Authentication token and URL deleted successfully")
             return True
             
         except FileNotFoundError:
