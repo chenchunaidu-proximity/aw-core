@@ -120,7 +120,7 @@ class TokenManager:
             return True
             
         except Exception as e:
-            logger.error(f"❌ Failed to store token data: {e}")
+            logger.error(f"Failed to store token data: {e}")
             # Clean up temp file if it exists
             temp_path = f"{self.storage_path}.tmp"
             if os.path.exists(temp_path):
@@ -139,7 +139,6 @@ class TokenManager:
         """
         try:
             if not os.path.exists(self.storage_path):
-                logger.info("===>> No token storage file found")
                 return None
             
             with open(self.storage_path, 'r', encoding='utf-8') as f:
@@ -147,14 +146,14 @@ class TokenManager:
             
             # Validate data structure
             if not isinstance(auth_data, dict):
-                logger.error("===>> Invalid token data format")
+                logger.error("Invalid token data format")
                 return None
             
             token = auth_data.get('token')
             url = auth_data.get('url')
             
             if not token or not url:
-                logger.error("===>> Token or URL missing from storage")
+                logger.error("Token or URL missing from storage")
                 return None
             
             # Check token expiration
@@ -163,8 +162,8 @@ class TokenManager:
                 current_time = datetime.now().timestamp()
                 if current_time >= exp_timestamp:
                     expires_at = datetime.fromtimestamp(exp_timestamp)
-                    logger.error(f"===>> Token expired on {expires_at.strftime('%Y-%m-%d %H:%M:%S')}")
-                    logger.error("===>> User needs to re-authenticate")
+                    logger.error(f"Token expired on {expires_at.strftime('%Y-%m-%d %H:%M:%S')}")
+                    logger.error("User needs to re-authenticate")
                     return None
                 else:
                     expires_at = datetime.fromtimestamp(exp_timestamp)
@@ -178,7 +177,7 @@ class TokenManager:
             logger.error(f"Invalid JSON in token storage file: {e}")
             return None
         except Exception as e:
-            logger.error(f"❌ Failed to get token data: {e}")
+            logger.error(f"Failed to get token data: {e}")
             return None
     
     def delete_token_data(self) -> bool:
@@ -200,7 +199,7 @@ class TokenManager:
             logger.debug("Token storage file already deleted")
             return True
         except Exception as e:
-            logger.error(f"❌ Failed to delete token data: {e}")
+            logger.error(f"Failed to delete token data: {e}")
             return False
     
     def is_authenticated(self) -> bool:
