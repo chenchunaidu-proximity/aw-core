@@ -15,8 +15,9 @@ Features:
 import json
 import os
 import logging
+import base64
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Any
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,21 @@ class TokenManager:
             logger.error(f"Failed to create storage directory: {e}")
             raise
     
+    @staticmethod
+    def _decode_jwt_exp(token: str) -> Optional[float]:
+        """Decode JWT token and extract expiration timestamp."""
+        try:
+            parts = token.split('.')
+            if len(parts) != 3:
+                return None
+            payload = parts[1]
+            payload += '=' * (4 - len(payload) % 4)  # Add padding
+            decoded = base64.urlsafe_b64decode(payload)
+            data = json.loads(decoded)
+            return data.get('exp')
+        except Exception:
+            return None
+    
     def store_token_data(self, token: str, url: str) -> bool:
         """
         Store authentication token and API URL to JSON file.
@@ -101,12 +117,10 @@ class TokenManager:
             # Atomic move (rename) to final location
             os.replace(temp_path, self.storage_path)
             
-            logger.info("✅ Authentication token and URL stored successfully")
-            logger.debug(f"Storage path: {self.storage_path}")
             return True
             
         except Exception as e:
-            logger.error(f"❌ Failed to store token data: {e}")
+            logger.error(f"Failed to store token data: {e}")
             # Clean up temp file if it exists
             temp_path = f"{self.storage_path}.tmp"
             if os.path.exists(temp_path):
@@ -125,7 +139,6 @@ class TokenManager:
         """
         try:
             if not os.path.exists(self.storage_path):
-                logger.debug("No token storage file found")
                 return None
             
             with open(self.storage_path, 'r', encoding='utf-8') as f:
@@ -143,7 +156,18 @@ class TokenManager:
                 logger.error("Token or URL missing from storage")
                 return None
             
-            logger.debug("✅ Authentication token and URL retrieved successfully")
+            # Check token expiration
+            exp_timestamp = self._decode_jwt_exp(token)
+            if exp_timestamp:
+                current_time = datetime.now().timestamp()
+                if current_time >= exp_timestamp:
+                    expires_at = datetime.fromtimestamp(exp_timestamp)
+                    logger.warning(f"Token expired on {expires_at.strftime('%Y-%m-%d %H:%M:%S')}, deleting...")
+                    self.delete_token_data()
+                    return None
+                else:
+                    expires_at = datetime.fromtimestamp(exp_timestamp)
+            
             return token, url
             
         except FileNotFoundError:
@@ -153,7 +177,7 @@ class TokenManager:
             logger.error(f"Invalid JSON in token storage file: {e}")
             return None
         except Exception as e:
-            logger.error(f"❌ Failed to get token data: {e}")
+            logger.error(f"Failed to get token data: {e}")
             return None
     
     def delete_token_data(self) -> bool:
@@ -169,14 +193,13 @@ class TokenManager:
                 return True
             
             os.remove(self.storage_path)
-            logger.info("✅ Authentication token and URL deleted successfully")
             return True
             
         except FileNotFoundError:
             logger.debug("Token storage file already deleted")
             return True
         except Exception as e:
-            logger.error(f"❌ Failed to delete token data: {e}")
+            logger.error(f"Failed to delete token data: {e}")
             return False
     
     def is_authenticated(self) -> bool:
