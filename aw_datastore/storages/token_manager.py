@@ -162,8 +162,8 @@ class TokenManager:
                 current_time = datetime.now().timestamp()
                 if current_time >= exp_timestamp:
                     expires_at = datetime.fromtimestamp(exp_timestamp)
-                    logger.error(f"Token expired on {expires_at.strftime('%Y-%m-%d %H:%M:%S')}")
-                    logger.error("User needs to re-authenticate")
+                    logger.warning(f"Token expired on {expires_at.strftime('%Y-%m-%d %H:%M:%S')}, deleting...")
+                    self.delete_token_data()
                     return None
                 else:
                     expires_at = datetime.fromtimestamp(exp_timestamp)
